@@ -1,0 +1,41 @@
+\documentclass[11pt]{article}
+
+\usepackage{fullpage}
+
+\begin{document}
+
+\title{Summer C Project Checkpoint}
+\author{Shashwat Dalal, Marcel Kenlay, Andy Li, Thomas Yung}
+
+
+
+
+\maketitle
+
+\section{Group Management}
+\subsection{Work Delegation}
+
+\begin{itemize}
+\item \textbf{Shashwat:} Worked on the main emulating loop, the output methods, the multiply instruction and the fetch and execute methods in pipeline.c.
+\item \textbf{Marcel:} Worked on the the decode method in pipeline.c and all of the single data transfer instruction. Also took a huge lead in changing the system architecture from a word addressable architecture to a byte addressable architecture.
+\item \textbf{Andy:} Worked on the branch instruction, the input methods, and took lead in debugging a lot of the code.
+\item \textbf{Thomas:} Worked on coming up with the project architecture, all of the data processing instruction, and took lead in changing the system architecture from a word addressable architecture to a byte addressable architecture.
+\end{itemize}
+
+\subsection{Git Strategy}
+Our strategy was to create one new branch each for each group member in addition to the master branch, and work on our designated sections using our personal branches. The master branch was only meant to be used to merge the changes.
+\subsection{Reflection}
+Initially, we focused on a top-down approach for the project, spending an entire day discussing how to modularise the project. The next step after deciding what files to create was to write the method stubs, the definitions header which held the state 'struct' and other key enumerations. Once that was done it was relatively easy to delegate tasks as expected inputs and expected outputs were explicitly labeled.\\
+As for the use of git, we had a lot of difficulties to overcome. To begin with, the use of multiple branches caused additional complications such as editing in wrong branches, having no upstream remote branch, and tracking wrong remote branches. These issues were overcome by reading the git manual and frequently having to delete the local git repository and re-cloning the remote repository. \\
+In hindsight, using git as a tool helped save countless hours. For example, at one point we decided to make a major change to the pipeline architecture, however we later realized that there was a quick fix to the problem by tweaking a single module. Having git allowed us to immediately revert back to the stashed version of the code, and make that small change whilst disregarding any previous changes we made to the pipeline.\\ 
+During a group debugging session it became apparent that communication between ourselves had to be efficient and clear. Fortunately we were able to collaborate with ease and the collective knowledge of all modules allowed for very quick pin pointing to where the bug was coming from, consequently reducing debugging time. In addition each member in the group was capable of self-management. Just from a stub file, each group member was able to produce the code required without asking for additional information about the other modules. \\
+Two places where our group could improve is unit testing, and decision making. In some cases the code that was merged to the master branch was not tested at all. This lead to a lot of issues as other members just assumed that code was tested and was more-or-less bug free. From this point onward it will be made clear that the code that is merged to the master branch must be tested and the merger should be convinced that the code is bug free.\\
+As for decision making, we argued back and forth whether to change the emulated memory from word-addressable to byte-addressable. At one point we agreed to go forward with the change but due to bugs we then decided to stick with a word addressable memory and emulate accordingly. However later we realized that it was better to emulate the processor in a similar manner rather than 'hack' around a convenience, thus decided to change the code to a byte addressable memory. To mitigate such wasted time in the future, design decisions like this should be thoroughly evaluated in the architecture planning stage of the project so that changes do not need to be made mid-production. 
+
+\section{Emulator Architecture}
+\subsubsection{UML Diagram}
+%\centerline{\includegraphics[width=0.6\textwidth]{A4_Drawing_Template.png}}
+\subsubsection{Discussion}
+The figure above describes the architecture of the emulator with respect to the header files and the main emulate.c file. Currently the instructions .c files have helper methods that can be generalized and abstracted into the util.c file. Once debugging for the emulator is complete, we will re-factor the current architecture to minimise code-duplication. \\
+We have not begun looking at the spec for assembler, but believe we will be able to use some of the utility methods, reuse the enumerations defined in the definitions file, and tweak the read from file method in io to work for reading in arm source files. 
+\end{document}

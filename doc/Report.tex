@@ -1,0 +1,95 @@
+\documentclass[11pt]{article}
+
+\usepackage{fullpage}
+\usepackage{courier}
+\usepackage[a4paper, total={5in, 9in}]{geometry}
+
+\begin{document}
+
+\title{ARM 11 Project and TRON Extension Report}
+\author{\textbf{Group 38}\\
+Shashwat Dalal (Group Leader)\\
+Marcel Kenlay\\
+Andy Li\\
+Thomas Yung}
+
+
+
+\maketitle
+
+
+\section{Introduction}
+
+In this report we will be discussing our implementation of an ARM assembler and our version of the classic \textit{TRON} game.
+Following this we will reflect on the project as a whole and discuss, individually, the aspects we found most challenging, the strengths and weaknesses of the project and finally, what we would do differently or maintain when working with a different group of people.
+
+
+
+\section{Assembler}
+
+\subsection{Implementation}
+Following our success with the emulator section of the project, we opted for a similar approach when dealing with the assembler. This meant that before any stub files were created, we sat down and thoroughly planned the key functionality and data flow of the assembler. Discussions began at either end of the assembly process with the input and output files and we worked inwards, extracting key methods from our model as we did.\par
+The input file is read into memory with each line being stored in a linked list queue, making it easy to add and remove elements. During this, we create the symbol table simultaneously to combine our first pass of the data with handling the file to make it easier to use. Now that we have a queue of strings, we tokenize them into separate universal structs that can hold any instruction type and then pass this struct to the relevant instruction builder by looking up the function string in a function table map data type we created. This map (which is also used in a similar way for the symbol table) is implemented as a linked list.\\
+Each instruction is then built after the custom instruction struct is passed to the relevant builder, located in an imported file dedicated to a instruction type. After each instruction is transformed into its binary representation, but stored as a $\texttt{uint32\_t }$ to be memory efficient, the binary value is finally written to the output file which was also created by the assembler.\par
+
+\section{GPIO}
+
+In completing the GPIO section of the project, we only had difficulty in making the light toggle between the on and off state which we soon realised was down to the speed at which the loop executed. We solved this by adding an extremely large empty loop in the main loop after each light change iteration.
+
+
+
+\section{Extension: TRON Game}
+\subsection{Outline and Use}
+TRON is a world famous arcade game that has been enjoyed for decades on a variety of platforms and has seen varying implementations of its base game in a multitude of other forms of entertainment.\par
+The game involves two or more `TRON bikes' that paint a trail over the surface they move on. If at any point one bike crosses paths with a previously laid trail, the crossing bike is eliminated from the game. The game is over when only one bike remains - the winner. \par
+
+
+\subsection{TRON Design}
+Approaching this task in the same way we dealt with the other parts of the project lead us to find three main sections of the task to focus on: game engine, graphical output and computer opponent.\par
+As all team members were familiar with the game, the main loop of the game could quickly be drafted and thus we could clearly see what functions we would be needing as we built up the game.\par
+In developing the game engine, most attention was placed on the main executable loop. The loop is short and will execute extremely quickly. It is for this reason that we decided to add a limit on the number of iterations per second of the loop; this would ensure the movement of the bikes isn't at an unplayable rate. Further additions to the game engine involved dealing with the keyboard input to the game, ensuring moves were executed correctly and the game terminated under the correct conditions.\par
+The board of the game itself was stored as a two dimensional array of integer values (of type \texttt{uint8\_t} to use as little memory as possible) where each entry represented the occupant (or trail) of the cell on game board. It is then the responsibility of the graphical output to present the board state in such a way that is easily read by the user.\par
+
+To output the board in a readable way we used the \textit{OpenGL} library. Firstly as all lab computers have it installed including the graphics library and its use is as simple as including a few compiler flags. Additionally \textit{OpenGL} took care of polling the keyboard for both players and running the main game loop without the need for us to use separate threads. The only downside to using \textit{OpenGL} was that we needed to use orthogonal projections for something as simple as a 2D matrix rendering, which felt like overkill. \\
+
+Lastly we added an AI opponent that chooses a best move by looking at the number of free spaces within two cells of it. If the any neighbouring cells checked are occupied, it randomly selects a move from a list of valid moves. Alternatively if all the surrounding cells are free, it chooses between continuing straight and turning randomly. This likelihood of a turn can be adjusted from the command line with the arguments passed to the game upon launch. The random element of the decision making stops the game from being deterministic. We initially set about creating an artificial intelligence that would compare its distance from an intersection with an opponent with the same opponent's distance to the same intersection. This would allow the AI to know whether or not it would win the race to the intersection (assuming both bikes travel in a straight line) and thus make a decision on whether or not to change course. However the problems faced with implementing this are discussed in the next section.\par
+
+
+\subsection{Problems and Challenges}
+One point that the description of the main loop exposed was how we were going to poll the users input devise (a keyboard) for the players' instructions. With the intention of avoiding needlessly using multiple system cores for the game we initially thought to check the keyboard input for each player's input separately rather than dedicating one thread to this task. However, we immediately realised how polling moves on two separate occasions may lead to inconsistencies with input and what the system records. We then opted to poll the entire keyboard and record any input for either player continuously using the \textit{OpenGL freeglut} library functions available. \par
+
+During the compilation of the three parts of the program, we found that a player would completely stop when given two direction changes in quick succession. The bike only stopped with two inputs that would direct the bike to travel down its current trail (an effective u-turn). We soon realised, that the cause of this bug was from the difference in the refresh rate of the game (the speed at which moves are processed) and the polling rate of the keyboard input. The difference in speed, with keyboard being quicker, made it possible for the user to input a sequence of invalid moves and perform a u-turn with the bike before the graphical output caught up to show the new position of the bike. To alleviate this issue, we introduced a flag for every player that indicated whether or not it had a move pending to be executed. This meant that every time the keyboard input changes for a player, it will not set a new direction until the current pending direction has been executed (thus changing which moves are valid for the next input). \par
+
+When designing the AI for the project, quite a few different problems arose. Because the game allowed a large number of players at a time, AI that relied on the state of each player's trajectory would be of order O(n!), which is suboptimal. As such, that AI was scrapped in favour of a simpler AI that would avoid immediate collisions. In addition, on a board with an odd number of total surface area, an edge case would arise where two AIs would enter a square at the same time, both registering this as a valid move. To combat this, another variable was added that checked for collisions in a larger radius.\par
+
+
+\subsection{Testing}
+In order to minimise the amount of time spent debugging the game, each team member individually tested their own code to ensure that the program components behaved in the expected way. We also ensured that all edge cases were covered during individual testing and  included error messages to be output to stderr in the relevant situations. Once individual testing was complete, the pieces were complied together and the general debugging process began. As a result of the initial testing, the debugging process was short however we still had to stress test the system to see if any errors occurred (indicated by the error messages we included). Our stress test was a case of repeatedly playing two computer players against each other (a feature unavailable in the game). Any errors from this were resolved and our game was almost ready. The last thing to do was to run a number of games with human players and run similar checks to make sure there was no errors from this either.
+
+%\newpage
+
+\section{Reflection}
+\subsection{Group Reflection}
+As a group we can confidently say that we had few problems when working together. Depite being friends before the project, the work was still approached in a professional manner although it was ensured that we enjoyed working together and wanted to dedicate the hours to the project rather than working because we felt obliged to.\par
+Due to a lack of foresight in the first part of the project, the emulator, we divided the tasks into unequal amounts leading to some members waiting for others to finish before we could progress. However we resolved this issue for the coming parts by adopting the informal `pick-up' system. Put simply, when someone finishes all their parts, they ask if anyone needs a part covering in order to maximise group efficiently. This system resulted in the completion of both parts two and three of the project in half of the time taken to complete the first part. Not only did this system speed up the rate at which we finished programs, but it made getting help from the team more accessible. \par
+We think it is fair to say that the uneven distribution of work caused some minor tension in the early stages of the project. Before we realised the work was unevenly distributed, we thought the reason that some finished before others was down to a lack of effort. After we tabled our concerns about why some were still completing tasks whilst others had finished, it became clear that it was merely a case of some having a lot of work to do whilst others less.\par
+Towards the end of the project it has become more apparent to us that writing code in a project like this is more of a collaborative effort, rather than the piecing together of individual pieces. When writing the extension from scratch the previous experience we have gained from the first three parts of the project has lead us to actively message the group with any significant developments beyond errors in each other's code. Such topics of discussion may be a useful function that one member envisages another using and alerting everyone as soon as possible, instead of factoring out common methods during the code clean-up.\par
+
+Having gotten over the early tensions and becoming a working unit, we came across virtually no more controversies. We were unafraid to question one another's design decisions but always followed with dialogue before a decision. It is perhaps for this reason why we overlooked the WebPA peer assessment; none of us had a desire for an outlet to express their anger at another member. However we all freely admit that missing the peer assessment was a mistake and we are all more aware of how we should allocate more time to making sure the small tasks are completed along with the big. Given the opportunity to work together again in the future, we would follow a similar approach as the second part onwards as we have found it to be very effective for working together.\par
+
+
+\subsection{Individual Reflection}
+\setlength{\leftskip}{1.5cm}
+
+\textbf{SHASHWAT DALAL (Team Leader:}​
+There were many challenges that were faced throughout the project and all were addressed gracefully. For example, initially there was some inequality in work distribution, but we addressed this issue by keeping the division of tasks in mind when drawing up the high-level project architecture for the assembler and extension. I think our group's strength was also our weakness. We attempted to constructively debate over sometimes the smallest decision. This mostly resulted in thoroughly forseeing the implications of the decision being made, but sometimes caused an endless debate which wasn't the most productive use of our times. Striking a balance between lengthy debates and running with an initial idea will undermine the efficiency of teamwork, with or without the same group, in the future. This experience has also stressed the importance of communication in group-work. Having worked with Marcel and Thomas for the Computing Topics project, we have developed a efficient communication chain. That communication was vital when debugging the project as a team and saved countless hours. In all, working with this particular group has been a very positive experience.\\\par
+
+\textbf{MARCEL KENLAY:} Overall I was happy with my performance in the group. I completed all tasks set to me within the time we had set. In assembler and emulator my main focus was single data transfer, a long with writing functions which made up the main pipeline. I believe I found a strength of mine to be solving errors found in debugging, as in the days which we were debugging I believe I helped to solve the issues which occurred effectively. An area in which I believe I could’ve improved was using git as there was many times at which I believe I didn’t use it in the optimal way, this led to me having to create several branches which I could’ve avoided. Therefore in next group projects I would make sure I have a good understanding of git before my next project as I now understand it’s importance in managing a group project.  I believe I fit into the group well as I took what I believe to be a fair amount of work, I also helped the other members of my group at times and received useful help from them.\\\par
+
+\textbf{ANDY LI:} As a newcomer to this group, I was stressed to make a good first impression. But my worries were for nothing, as the other three had already established a strong team dynamic, and I managed to fit in quite well. What I lacked in my initial general knowledge of C, I made up for with good troubleshooting skills, and many of the innovations that went into our extension.  In future group projects, I would try to take more initiative on sections of the project that looked to be challenging, but interesting, and have a say in which tasks are allocated to me, so that I would only have myself to blame if I didn't enjoy my role in the project.\\\par
+
+\textbf{THOMAS YUNG:} During this project I feel like I have fit into the team well. On the first and second parts of the project I took the responsibility of completing the data processing section of the task. This made sense to the group as I was then able to really focus my attention on the more minor details of the section and have a really solid understanding of how it worked. Despite only writing one section from scratch, I found it straightforward to understand the other sections during the debugging sessions as a result of the support my team gave me. In future projects I think I will try to adopt a similar approach and split tasks up between members whilst always taking the time to understand most of the other parts. Looking back retrospectively I wouldn't change much about the way the group and I approached the work. The only major problem we had was work division which was quickly alleviated. I would like to become more proficient in using git as fixing the repository resulted in a lot of time being wasted.\par
+
+\setlength{\leftskip}{0px}
+
+\end{document}
